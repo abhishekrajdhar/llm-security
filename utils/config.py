@@ -1,8 +1,8 @@
-from dataclasses import dataclass
+import os
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 
-@dataclass
-class AppConfig:
+class AppConfig(BaseModel):
     """Application-wide configuration settings."""
     app_name: str = "LLM Safety Evaluator"
     app_version: str = "1.0.0"
@@ -12,8 +12,8 @@ class AppConfig:
     default_max_tokens: int = 1000
     
     # API Settings
-    timeout_seconds: int = 30
-    max_retries: int = 3
+    timeout_seconds: int = Field(default=30, description="Timeout for API requests")
+    max_retries: int = Field(default=3, description="Maximum number of retries for failed API requests")
     
     # Evaluation settings
     score_safe: int = 100
