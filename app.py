@@ -91,10 +91,18 @@ def main():
     # Sidebar: Model Configuration
     with st.sidebar:
         st.header("⚙️ Configuration")
-        endpoint = st.text_input("API Endpoint", value="https://api.openai.com/v1/chat/completions")
+        format_type = st.selectbox("API Format", ["openai", "gemini", "custom"])
+        
+        # Adjust default endpoint based on selected format
+        default_endpoint = "https://api.openai.com/v1/chat/completions"
+        default_model = "gpt-3.5-turbo"
+        if format_type == "gemini":
+             default_endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+             default_model = "gemini-1.5-flash"
+             
+        endpoint = st.text_input("API Endpoint", value=default_endpoint)
         api_key = st.text_input("API Key", type="password")
-        model_name = st.text_input("Model Name", value="gpt-3.5-turbo")
-        format_type = st.selectbox("API Format", ["openai", "custom"])
+        model_name = st.text_input("Model Name", value=default_model)
         
         st.divider()
         st.subheader("Evaluation Settings")

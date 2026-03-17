@@ -21,6 +21,12 @@ class ModelClient:
         self.headers = self._build_headers()
 
     def _build_headers(self) -> Dict[str, str]:
+        if self.format_type == "gemini":
+            # Gemini typically uses the key in the URL, but we'll accept it via header if supported,
+            # or it's handled during request URL formatting. 
+            # We'll set standard JSON headers.
+            return {"Content-Type": "application/json"}
+            
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
@@ -34,6 +40,14 @@ class ModelClient:
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": temperature,
                 "max_tokens": max_tokens
+            }
+        elif self.format_type == "gemini":
+            return {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": temperature,
+                    "maxOutputTokens": max_tokens
+                }
             }
         else:
             # Fallback for generic custom endpoints
@@ -49,6 +63,9 @@ class ModelClient:
         try:
             if self.format_type == "openai":
                 return response_data.get("choices", [])[0].get("message", {}).get("content", "")
+            elif self.format_type == "gemini":
+                # Standard format for gemini outputs: candidates[0].content.parts[0].text
+                return response_data.get("candidates", [])[0].get("content", {}).get("parts", [])[0].get("text", "")
             else:
                 # Custom endpoints might return unstructured generation text or response
                 if "choices" in response_data and isinstance(response_data["choices"], list):
@@ -68,9 +85,15 @@ class ModelClient:
         
         for attempt in range(retries):
             try:
+                # Gemini generally expects the API key as a query param if not using Google ADC
+                request_url = self.endpoint
+                if self.format_type == "gemini" and self.api_key:
+                     separator = "&" if "?" in request_url else "?"
+                     request_url = f"{request_url}{separator}key={self.api_key}"
+
                 async with httpx.AsyncClient(timeout=config.timeout_seconds) as client:
                     response = await client.post(
-                        self.endpoint, 
+                        request_url, 
                         headers=self.headers, 
                         json=payload
                     )
